@@ -9,12 +9,25 @@ cd tech-assessment/qa
 node homework-evaluation/reference/logic-harness.mjs        # 24/24 expected
 
 make start
-cp homework-evaluation/reference/verify.internal.cy.js homework/starter/cypress/e2e/
-make test SEED=1000 ARGS="--spec cypress/e2e/verify.internal.cy.js"   # 11/11 expected
-make test SEED=1234 ARGS="--spec cypress/e2e/verify.internal.cy.js"   # 11/11 expected
-rm homework/starter/cypress/e2e/verify.internal.cy.js
-rm -rf homework/starter/cypress/screenshots
+
+# Cypress path — 11/11 expected on each seed
+cp homework-evaluation/reference/verify.internal.cy.js homework/starter-cypress/cypress/e2e/
+make test FRAMEWORK=cypress SEED=1000 ARGS="--spec cypress/e2e/verify.internal.cy.js"
+make test FRAMEWORK=cypress SEED=1234 ARGS="--spec cypress/e2e/verify.internal.cy.js"
+rm homework/starter-cypress/cypress/e2e/verify.internal.cy.js
+rm -rf homework/starter-cypress/cypress/screenshots
+
+# Playwright path — 8 passed + 3 skipped expected on each seed
+cp homework-evaluation/reference/verify.internal.spec.js homework/starter-playwright/tests/e2e/
+make test FRAMEWORK=playwright SEED=1000 ARGS="tests/e2e/verify.internal.spec.js"
+make test FRAMEWORK=playwright SEED=1234 ARGS="tests/e2e/verify.internal.spec.js"
+rm homework/starter-playwright/tests/e2e/verify.internal.spec.js
+rm -rf homework/starter-playwright/test-results
 ```
+
+Both browser harnesses cover the same 11 defects; run the Cypress one after any `app/`
+change and **both** after any change to a scaffold or to the Docker setup. Playwright skips
+the inactive Tier B cases where Cypress passes them fast — same meaning, different reporting.
 
 If those are green, **every row in Parts 1 and 2 below is already verified** — keep them as
 the written repro reference (they are the steps we use when grading a candidate's report),
@@ -99,5 +112,8 @@ Open <http://127.0.0.1:4173/index.html?seed=1234>, reset storage, reload.
 | `logic-harness.mjs` 24/24 | ☐ |
 | All Tier A reproduce | ☐ |
 | All Tier B reproduce (seeds 1000 + 1234) | ☐ |
+| Cypress verifier green on both seeds | ☐ |
+| Playwright verifier green on both seeds | ☐ |
+| Both scaffolds' smoke specs pass (`make test FRAMEWORK=… `) | ☐ |
 | No uncaught console errors on any screen | ☐ |
-| Candidate bundle contains only `app/` + `homework/` (no `node_modules/`, no `homework-evaluation/`) | ☐ |
+| Candidate bundle contains only `app/`, `homework/`, `docker/`, `Makefile`, `docker-compose.yml`, `START-HERE.md` (no `node_modules/`, no `homework-evaluation/`, no leftover `verify.internal.*`) | ☐ |

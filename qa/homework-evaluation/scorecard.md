@@ -2,6 +2,7 @@
 
 **Candidate:**
 **Seed:**
+**Framework:** ☐ Cypress ☐ Playwright
 **Reviewer / date:**
 **Submission link:**
 
@@ -34,16 +35,20 @@
 
 | Check | Result |
 |---|---|
-| `npm install` clean | |
-| Spec count (cap 10) | |
-| Run 1 (pass/fail per spec) | |
+| `make test FRAMEWORK=… SEED=…` runs clean from a cold checkout | |
+| Only **one** scaffold submitted / which one to run is unambiguous | |
+| Test-case count (cap 10, ≤5 files) | |
+| Run 1 (pass/fail per test) | |
 | Run 2 — identical to run 1? | |
 | Run 3 — identical to run 1? | |
 | Known-defect tests present, labelled, asserting **correct** behaviour | |
-| `grep "cy.wait(<number>"` count | |
-| `.only` / `.skip` present | |
-| State reset strategy (`localStorage`) | |
+| Known-defect tests actually **fail** (not neutralised) | |
+| Hard sleeps: `cy.wait(<n>)` / `page.waitForTimeout(<n>)` count | |
+| `.only` / `.skip` / `test.fixme` / **`test.fail`** present | |
+| `retries` still 0 | |
+| State model: understood & explained (see Area 7 note) | |
 | CI present (bonus) | |
+| Second browser engine, with interpretation (bonus) | |
 
 ---
 
@@ -55,7 +60,7 @@
 | 2. Bug report quality | 15% | | | |
 | 3. Severity / priority & risk | 10% | | | |
 | 4. UX & accessibility findings | 15% | | | |
-| 5. Cypress suite design | 15% | | | |
+| 5. Automation suite design | 15% | | | |
 | 6. Assertion quality | 10% | | | |
 | 7. Determinism & flake control | 10% | | | |
 | 8. Communication (`TEST_PLAN.md`) | 5% | | | |
@@ -79,6 +84,8 @@
 - Booking attempt #4 fails. Was that random? How would you find out?
 - Your suite passes on the first run. How confident are you it passes on a colleague's
   machine tomorrow — and why?
+- Why did you pick *(their framework)*? What would have been harder in the other one?
+- What clears state between your tests, and what does that *not* cover?
 - What would you have asked us before starting, if you could?
 - You had one day. What did you deliberately not test, and what risk did that leave?
 

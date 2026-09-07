@@ -9,6 +9,12 @@ a judgment core (are their reports, priorities and tests any good?). This rubric
 two separate so a candidate who finds fewer bugs but reports and automates them
 excellently is not automatically outranked by a bug-count maximiser — and vice versa.
 
+**The candidate chose either Cypress or Playwright** for Part 2 (their `README.md` and
+`TEST_PLAN.md` say which). **The framework choice itself is not graded** — the bars below are
+identical for both. Read their code through the [framework equivalence
+table](#framework-equivalence-table) in Area 7, which says which construct means what on
+each side. Areas 1–4 never touch the framework at all.
+
 ---
 
 ## How to use this rubric
@@ -31,7 +37,7 @@ excellently is not automatically outranked by a bug-count maximiser — and vice
 | 2 | Bug report quality | 15% |
 | 3 | Severity / priority judgment & risk reasoning | 10% |
 | 4 | UX & accessibility findings | 15% |
-| 5 | Cypress suite design | 15% |
+| 5 | Automation suite design | 15% |
 | 6 | Assertion quality | 10% |
 | 7 | Determinism & flake control | 10% |
 | 8 | Communication (`TEST_PLAN.md`) | 5% |
@@ -49,17 +55,31 @@ underlying instinct was.
 2. Clear `localStorage`, open the app on their seed, and **reproduce each reported bug from
    their steps only**. Mark each: reproduced / not reproduced / not a bug / distractor.
 3. Map their findings onto the catalogue → compute **recall = found / 8**.
-4. Run their suite **three consecutive times** — Docker, exactly as the brief tells them:
+4. Note their **framework**, then run their suite **three consecutive times** — Docker,
+   exactly as the brief tells them:
    ```bash
    make start SEED=<their seed>
-   make test  SEED=<their seed>   # ×3
+   make test  SEED=<their seed> FRAMEWORK=<theirs>   # ×3
    ```
    If they restructured the setup, follow the commands in their `README.md`. A submission that
    only runs after undocumented manual setup is a finding in Area 8, not a reason to stop.
    Record: pass/fail per run, which failures are their intentional known-defect tests, and
    any run-to-run variation (= flake).
-5. `grep -rn "cy.wait(\s*[0-9]" cypress/` → count hard sleeps.
-6. `grep -rn "\.skip\|\.only" cypress/` → skipped/pinned tests.
+5. Grep for hard sleeps and for constructs that hide failures — **pick the block that
+   matches their framework**:
+   ```bash
+   # Cypress
+   grep -rn "cy\.wait(\s*[0-9]" cypress/
+   grep -rn "\.skip\|\.only" cypress/
+   grep -rn "retries" cypress.config.js cypress/
+
+   # Playwright
+   grep -rn "waitForTimeout\|setTimeout" tests/
+   grep -rn "test\.fail\|test\.fixme\|test\.skip\|\.only(" tests/
+   grep -rn "retries\|forbidOnly" playwright.config.js tests/
+   ```
+6. Check the known-defect tests actually **fail** in the run from step 4. A green run with
+   "known defects" in it means the failure was neutralised — see Area 5.
 7. Read `TEST_PLAN.md` last, so their narrative doesn't colour the objective checks.
 
 ---
@@ -147,18 +167,26 @@ systemic risk rather than cosmetic nitpicks.
 
 ---
 
-## Area 5 — Cypress suite design (15%)
+## Area 5 — Automation suite design (15%)
 
-- **Respected the 6–10 spec cap** and can explain what they left out and why. Writing 30
+- **Respected the 6–10 test-case cap** and can explain what they left out and why. Writing 30
   shallow tests is a **negative** here — it is the prioritization signal.
 - **≥2 known-defect regressions asserting the correct behaviour** (so they fail), clearly
   labelled and mapped to `BUG-xx`. **Auto-cap at 2** if they instead codified the buggy
   behaviour as expected — that would lock the defect in, the worst possible QA habit.
-- Structure: reusable steps/commands/page objects proportionate to the size; fixtures or
+  **Also auto-cap at 2** if the known-defect tests are green because the failure was
+  neutralised with `test.fail` / `test.fixme` / `.skip` — same harm, different mechanism.
+- Structure: reusable steps/commands/page objects/fixtures proportionate to the size;
   helpers instead of copy-paste; readable test names describing behaviour.
-- Selectors: uses `data-testid` where available; where absent, chooses stable anchors over
-  brittle CSS chains — and **flags the gap** as feedback to engineering (the app deliberately
-  has partial coverage).
+- Selectors: uses `data-testid` where available (`cy.get('[data-testid=…]')` /
+  `page.getByTestId(…)`); where absent, chooses stable anchors over brittle CSS chains — and
+  **flags the gap** as feedback to engineering (the app deliberately has partial coverage).
+- **Used their framework's idioms rather than transliterating the other one.** A 4-level
+  signal on both sides: Playwright — web-first `await expect(locator).toHaveText(…)`,
+  `getByTestId`/`getByRole`, fixtures for setup, not `waitForSelector` plus hand-rolled
+  polling; Cypress — retrying `.should(…)` chains and custom commands, not `.then()`
+  spaghetti wrapping every step. Someone who clearly learned the tool for this homework and
+  used it well is fine; someone fighting it is the signal.
 - Not required: CI. Present and working = bonus.
 
 **4** = all of the above, would merge into our repo. **3** = solid, some duplication or one
@@ -177,6 +205,10 @@ don't run, or they asserted the buggy behaviour as correct.
 - Guards against false passes: does a "booking succeeded" test verify the session appears in
   My sessions, or does it trust the toast? (**The B3 trap applies to their tests too** — a
   test that asserts only the toast would pass on a broken build.)
+- Asserted against real state where it matters. Both scaffolds expose the app's own store
+  (`cy.window().then(w => w.AceUpStore.sessions())` / `app.sessions()`); using it for
+  count/duration assertions is good, though DOM-level assertions on the rendered values are
+  equally valid and arguably closer to the user.
 
 **4** = state-based, meaningful, false-pass-resistant. **3** = mostly behavioural, one or two
 weak assertions. **2** = existence checks dominate. **1** = tests that cannot fail.
@@ -187,17 +219,60 @@ weak assertions. **2** = existence checks dominate. **1** = tests that cannot fa
 
 Objective, from steps 4–6.
 
-- **Zero hard sleeps** (`cy.wait(1000)`); waits on state, aliases, or intercepts.
-- **Handles the `localStorage` trap** — explicit state reset (`beforeEach` clearing
-  `aceup.*`) or a design that tolerates accumulated state. A suite that passes once and
-  fails on run 2 exposes exactly this.
-- Specs **independent and order-independent**; no `.only`; no `.skip` used to hide failures.
+- **Zero hard sleeps**; waits on state, aliases, intercepts/routes.
 - **Same results across all three runs** (their known-defect tests failing consistently is
   correct and expected).
+- Tests **independent and order-independent**; nothing pinned with `.only`; no failure
+  neutralised with `.skip` / `test.skip` / `test.fixme` / `test.fail`.
+- Retries left at 0.
+- **Understands the state model** — see the note below.
 
-**4** = 3/3 identical runs, no sleeps, deliberate state strategy explained. **3** = 3/3
+**4** = 3/3 identical runs, no sleeps, state strategy deliberate **and explained**. **3** = 3/3
 identical but state handling implicit/lucky, or one sleep. **2** = one run differs, or
-several sleeps, or order-dependent. **1** = flaky/won't run, or `.skip`ped failures.
+several sleeps, or order-dependent. **1** = flaky/won't run, or failures neutralised.
+
+### On the `localStorage` state model — read this before scoring
+
+Both frameworks **isolate state between tests by default**, and we have verified it on this
+build: Cypress e2e `testIsolation` (default `true`, not overridden in the scaffold) clears
+`localStorage` before each test, and Playwright gives each test a fresh browser context,
+which does the same. A two-test probe — book in test 1, assert zero sessions in test 2 —
+passes untouched in **both** scaffolds.
+
+So "wrote a `beforeEach` that clears `aceup.*`" is **not** the discriminator this criterion
+used to imply, and a suite without one does **not** fail on run 2. Do not mark a candidate
+down for its absence, and do not credit it as insight on its own. What still discriminates:
+
+- Did they **state** the isolation model, rather than assume or ignore it?
+- Did they notice where it does *not* save them: state accumulating **within** a single test
+  (several bookings in one case), a `cy.visit` / `page.reload()` mid-test, the `aceup.seed`
+  key surviving a partial clear, or — Playwright — a reused `storageState` or a
+  `test.describe.configure({ mode: 'serial' })` block that shares a context?
+- Did they keep the three runs identical, which is what the criterion is actually for?
+
+A candidate who says "the framework isolates this for me, here is where it doesn't" is
+showing more than one who writes a reset hook without knowing why.
+
+### Framework equivalence table
+
+| Concern | Cypress | Playwright |
+|---|---|---|
+| Hard sleep (banned) | `cy.wait(<number>)` | `page.waitForTimeout(<number>)`, `await new Promise(r => setTimeout(r, n))` |
+| Wait on state (wanted) | retrying `.should(…)` | web-first `await expect(locator).toHaveText/toHaveCount/…` |
+| Retries must stay 0 | `retries` in config, `--retries` | `retries` in config, `--retries`, `test.describe.configure({ retries })` |
+| Neutralising a failure | `.skip`, `.only` | `test.skip`, `test.fixme`, **`test.fail`**, `test.only`, `test.describe.only`, `--grep-invert` |
+| Between-test state | `testIsolation` (default **true**) clears `localStorage` | fresh browser context per test does the same |
+| Reintroducing shared state | `testIsolation: false` | shared `storageState`, `mode: 'serial'`, a manually reused context |
+| Order independence | spec/test order | `workers` > 1, `fullyParallel: true` |
+| Network stubbing | `cy.intercept` | `page.route` |
+| Reaching app globals | `cy.window().then(w => w.AceUpStore…)` | `page.evaluate(() => window.AceUpStore…)`, or the `app.sessions()` / `app.flag()` fixture |
+| Seed plumbing | `Cypress.env('seed')`, `cy.visitApp` | the `seed` fixture / `process.env.SEED`, `app.goto` |
+
+**`test.fail()` deserves special attention.** It is the one construct that turns a
+correctly-failing known-defect test into a **green** run without asserting anything wrong —
+the exact outcome Area 5's "asserted the correct behaviour" check exists to catch. The brief
+forbids it explicitly. If you find it on a known-defect test, treat it as the Playwright
+equivalent of `.skip`ping a failure: Area 5 auto-caps at 2 and it is a red flag here.
 
 ---
 
@@ -223,6 +298,12 @@ several sleeps, or order-dependent. **1** = flaky/won't run, or `.skip`ped failu
 - Worked out that behaviour is seed-scoped and used that to make tests deterministic.
 - Automated a11y checks (axe) with **interpreted** results.
 - CI workflow running the suite.
+- Ran the suite on a **second browser engine** (Playwright: `--project=webkit`/`firefox`; or
+  Cypress `--browser`) and **interpreted** the differences. Claiming cross-browser coverage
+  without evidence stays a red flag; actually doing it and reporting what changed is a real
+  signal, and cheap on the Playwright path.
+- Used `cy.intercept` / `page.route` to force the injected 4th-booking 500 directly instead
+  of booking three times to reach it.
 - Testability PR-style suggestions (concrete `data-testid` proposals, a timezone attribute).
 - Asked us a **good clarifying question** before starting (e.g. what the intended timezone
   contract is). We should treat this as positive, not as a lack of autonomy.
@@ -230,8 +311,11 @@ several sleeps, or order-dependent. **1** = flaky/won't run, or `.skip`ped failu
 ## Red flags (drag the score regardless of volume)
 
 - Regression tests that assert the **buggy** behaviour as expected.
-- `cy.wait(3000)` as the waiting strategy.
-- `.skip` / `.only` left in, or tests deleted to make the suite green.
+- `cy.wait(3000)` / `page.waitForTimeout(3000)` as the waiting strategy.
+- `.skip` / `test.skip` / `test.fixme` / **`test.fail`** / `.only` left in, retries switched
+  on, or tests deleted to make the suite green.
+- Submitted **both** scaffolds filled in, or left the unused one ambiguous so it is unclear
+  which suite we should run.
 - Bug count padded with duplicates or with documented build constraints.
 - No seed recorded anywhere → nothing is reproducible.
 - Reports symptoms with **no** expected result stated.
@@ -249,9 +333,10 @@ several sleeps, or order-dependent. **1** = flaky/won't run, or `.skip`ped failu
   results; tests are existence checks with hard sleeps.
 - **Target (hire):** 5–6 of 8 including A1; reproducible reports with calibrated severity;
   5+ UX/a11y findings including the missing cancel confirmation; 6–10 clean Cypress specs
-  with state-based waits, 2 labelled regressions, deterministic across 3 runs; a test plan
-  that states what it did not cover.
+  with state-based waits, 2 labelled regressions that genuinely fail, deterministic across 3
+  runs; a test plan that states what it did not cover and which framework they picked and why.
 - **Strong (senior signal):** 7–8 of 8 including **B3** found by verifying outcomes rather
   than trusting the UI; root-cause grouping (timezone/date-format as one systemic issue);
   keyboard + 320 px passes done; testability feedback to engineering; explains the
-  localStorage/latency determinism problem before we point it out.
+  state-isolation and latency determinism model before we point it out — including that
+  their framework already handles between-test isolation and where that stops helping.

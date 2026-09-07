@@ -22,8 +22,8 @@ The build in `app/` is what you test. It is a static site: no login, no backend,
 kept in your browser. **Docker is the only prerequisite** — see `START-HERE.md`:
 
 ```bash
-make start SEED=<your seed>   # app on http://localhost:4173
-make test  SEED=<your seed>   # runs the Cypress suite in Docker
+make start SEED=<your seed>                       # app on http://localhost:4173
+make test  SEED=<your seed> FRAMEWORK=<yours>     # runs your suite in Docker
 ```
 
 **It contains real defects.** Some are functional, some are usability/accessibility
@@ -77,28 +77,55 @@ to user impact and likelihood, not to how much code exists.
 
 ## Part 2 — Automation (~3–4h)
 
-Extend `homework/starter/` (Cypress, already configured and running).
+### 2.0 Pick your framework
+
+Two working scaffolds are provided. Extend **exactly one**:
+
+| Scaffold | Framework | Run it with |
+|---|---|---|
+| `homework/starter-cypress/` | Cypress 15 | `make test FRAMEWORK=cypress` |
+| `homework/starter-playwright/` | Playwright 1.63 | `make test FRAMEWORK=playwright` |
+
+Both are already configured and running — each has a passing smoke spec, a seed-aware
+navigation helper, and its own README. Pick the one you would actually reach for at work.
+We have **no preference** and there is no hidden bonus for either; the requirements and the
+grading bar below are identical. Say which you picked and why in your `TEST_PLAN.md`.
+
+**Submit one suite, not two.** Delete the scaffold you did not use, or say clearly in your
+`README.md` which one to run.
 
 ### 2.1 The suite
 
-Write **6–10 specs total. Do not exceed 10** — we are grading prioritization, not volume.
-It must include:
+Write **6–10 test cases in total, across at most 5 files. Do not exceed 10 cases** — we are
+grading prioritization, not volume. It must include:
 
 - **≥ 3 happy paths** that pass reliably (e.g. book a session, cancel a session, chat
   round-trip, filter the directory)
 - **≥ 2 regression tests for defects you found**, asserting the **correct** expected
-  behaviour. These will therefore **fail** on the current build. Mark them clearly
-  (e.g. a `describe('known defects')` block referencing your `BUG-xx` IDs). Do **not**
-  `.skip` them and do **not** assert the buggy behaviour.
+  behaviour. These will therefore **fail** on the current build — that is the point, and a
+  failing run here is not a failed submission. Mark them clearly (e.g. a
+  `describe('known defects')` / `test.describe('known defects')` block referencing your
+  `BUG-xx` IDs). Do **not** assert the buggy behaviour, and do **not** neutralise the
+  failure: no `.skip` / `test.skip`, no `test.fixme`, and no `test.fail` — a green run that
+  hides a real defect is worse than a red one that names it.
 - **≥ 1 negative / boundary case** (validation, error path, or an input limit)
 
 ### 2.2 Engineering requirements
 
-- The suite must pass with **`make test`** (Docker) — that is how we will run it.
-- **No `cy.wait(<milliseconds>)` as a synchronisation mechanism.** Wait on state.
-- Specs must be **independent** and pass in any order, and the whole suite must pass
-  (except your marked known-defect tests) on **three consecutive runs**. We will run it
-  three times.
+These apply identically to both frameworks.
+
+- The suite must run with **`make test FRAMEWORK=<yours> SEED=<your seed>`** (Docker) — that
+  is how we will run it. Put that exact command in your `README.md`.
+- **No fixed sleeps as a synchronisation mechanism.** Wait on state, not on the clock:
+  - Cypress: no `cy.wait(<milliseconds>)` — use retrying `.should(…)` assertions
+  - Playwright: no `page.waitForTimeout(<milliseconds>)` — use web-first
+    `await expect(locator).toHaveText(…)` assertions
+  - waiting on a *request* (`cy.intercept` / `page.route`) is fine and welcome
+- **Leave retries off.** Both configs ship with `retries: 0` on purpose; don't turn them on
+  to paper over flakiness.
+- Tests must be **independent** and pass in any order, and the whole suite must behave
+  identically (except your marked known-defect tests) on **three consecutive runs**. We will
+  run it three times.
 - Assert **behaviour and state**, not just that an element exists.
 - Keep selectors intentional; centralise reusable steps.
 
@@ -119,7 +146,8 @@ Do **not**:
 
 - fix the application code (report it, don't repair it)
 - do performance, load, or security testing
-- migrate to another test framework (Cypress is a requirement here)
+- use a test framework other than the two provided (no WebdriverIO, Selenium, TestCafe…);
+  picking between Cypress and Playwright is your call, replacing both is not
 - chase 100% coverage or write a test per element
 - set up CI (welcome as a bonus, not expected)
 
@@ -132,10 +160,10 @@ A repository (or zip) containing:
 1. `BUG_REPORT.md`
 2. `UX_FINDINGS.md`
 3. `TEST_PLAN.md`
-4. Your Cypress suite
-5. A short `README.md` with **your seed**, the exact command to run the suite (`make test
-   SEED=…` unless you changed the setup), and anything we need to know to reproduce your
-   results
+4. Your automated suite (one framework)
+5. A short `README.md` with **your seed**, **which framework you used**, the exact command
+   to run the suite (`make test FRAMEWORK=… SEED=…` unless you changed the setup), and
+   anything we need to know to reproduce your results
 
 Optional: a 5-minute Loom walking us through your two most interesting findings.
 
@@ -146,7 +174,8 @@ Optional: a 5-minute Loom walking us through your two most interesting findings.
 Roughly, in order of weight: how many real defects you found and how reproducible your
 reports are; the soundness of your severity/priority calls; the depth of your UX and
 accessibility observations; the design, assertion quality and **determinism** of your
-Cypress suite; and how clearly you communicate trade-offs and gaps.
+suite; and how clearly you communicate trade-offs and gaps. Which framework you chose is
+**not** graded; how well you used it is.
 
 We explicitly reward honesty: "I did not have time to cover X, here is the risk that
 leaves" scores better than silence or padding.

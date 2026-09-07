@@ -1,0 +1,16 @@
+{
+  "name": "aceup-qa-homework",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Playwright starter for the AceUp QA take-home assessment",
+  "scripts": {
+    "serve": "serve --no-clipboard -l 4173 ../../app",
+    "pw:open": "playwright test --ui",
+    "pw:run": "playwright test",
+    "e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "serve": "14.2.4"
+  }
+}

@@ -21,8 +21,32 @@ services:
         condition: service_healthy
     working_dir: /e2e
     volumes:
-      - ./homework/starter:/e2e
+      - ./homework/starter-cypress:/e2e
     environment:
       # inside the compose network the app is reachable as http://app
       CYPRESS_baseUrl: http://app
       CYPRESS_seed: ${SEED:-1000}
+
+  playwright:
+    build:
+      context: .
+      dockerfile: docker/playwright.Dockerfile
+    # only started explicitly (make test), never by `docker compose up`
+    profiles: ["test"]
+    depends_on:
+      app:
+        condition: service_healthy
+    # Share the app container's network namespace, so nginx is reachable over
+    # loopback. Chromium's network process cannot reach a sibling container on
+    # the compose bridge under Docker Desktop, so the usual `http://app` does
+    # not work here — loopback does. (Cypress runs Electron and is unaffected,
+    # which is why that service still uses http://app.)
+    network_mode: "service:app"
+    working_dir: /e2e
+    volumes:
+      - ./homework/starter-playwright:/e2e
+      # keeps the image's baked node_modules visible under the bind mount above
+      - /e2e/node_modules
+    environment:
+      BASE_URL: http://localhost
+      SEED: ${SEED:-1000}

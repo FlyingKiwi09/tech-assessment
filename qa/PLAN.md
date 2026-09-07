@@ -4,7 +4,7 @@
 **Timebox for candidate:** 1 day (~6–8h)
 **System under test (SUT):** a purpose-built static web app that simulates AceUp flows (AI coach chat + session scheduling)
 **Candidate output:** a bug/UX report **plus** a Cypress suite
-**Scoping decisions (locked):** Cypress required · static site only (no backend) · seeded/deterministic bug injection · 1-day timebox
+**Scoping decisions (locked):** automated suite required, **Cypress or Playwright** (§8; originally Cypress-only) · static site only (no backend) · seeded/deterministic bug injection · 1-day timebox
 
 ---
 
@@ -43,20 +43,28 @@ tech-assessment/qa/
 │   │       └── ui.js            # rendering
 │   ├── data/{coaches.json,slots.json,chat-scripts.json}
 │   └── README.md                # candidate-facing: how to serve it
+├── docker/
+│   └── playwright.Dockerfile    # Playwright runner image (see §8)
 ├── homework/
 │   ├── assignment.md            # candidate-facing brief
-│   └── starter/                 # Cypress scaffold they extend
-│       ├── package.json         # cypress pinned, `npm run serve`, `npm run e2e`
-│       ├── cypress.config.js    # baseUrl, retries:0, video off
-│       ├── cypress/e2e/smoke.cy.js
-│       ├── cypress/support/{e2e.js,commands.js}
+│   ├── starter-cypress/         # Cypress scaffold (see §8)
+│   │   ├── package.json         # cypress pinned, `npm run serve`, `npm run e2e`
+│   │   ├── cypress.config.js    # baseUrl, retries:0, video off
+│   │   ├── cypress/e2e/smoke.cy.js
+│   │   ├── cypress/support/{e2e.js,commands.js}
+│   │   └── README.md
+│   └── starter-playwright/      # Playwright scaffold (see §8)
+│       ├── package.json         # @playwright/test pinned
+│       ├── playwright.config.js # baseURL, retries:0, workers:1, seed
+│       ├── tests/e2e/smoke.spec.js
+│       ├── tests/support/fixtures.js
 │       └── README.md
 └── homework-evaluation/
     ├── bug-catalog.md           # GROUND TRUTH — internal only, never shipped
     ├── criteria.md              # rubric (weights, 0–4 bands, red flags)
     ├── scorecard.md             # fill-in template
-    ├── MANUAL-VERIFICATION.md   # pre-send checklist (browser, no Cypress needed)
-    └── reference/               # internal Cypress harness proving each defect reproduces
+    ├── MANUAL-VERIFICATION.md   # pre-send checklist (browser, no runner needed)
+    └── reference/               # internal harnesses proving each defect reproduces
 ```
 
 Plus `README.md` (internal index + how to bundle/send) and `seeds.example.md` (candidate →
@@ -141,11 +149,11 @@ Grading intent: a strong candidate reports **A1 as Critical with the timezone/da
 4. A short **risk assessment**: which 3 areas they'd regression-test first and why.
 
 **Part 2 — Automation (~3–4h)**
-5. Extend `homework/starter/` into a **Cypress** suite: **6–10 specs max** (we explicitly cap it — we want prioritization, not volume).
+5. Extend one of the two scaffolds into a suite (**Cypress or Playwright** — their pick, see §8): **6–10 test cases max** (we explicitly cap it — we want prioritization, not volume).
    - at least 2 specs that **fail** because they assert the *correct* expected behaviour (regression tests for found bugs — must be clearly marked, not skipped)
    - at least 3 **happy-path** specs that pass reliably
    - one **negative/edge** case (validation or error path)
-6. Requirements: no `cy.wait(<ms>)` as a sync mechanism; deterministic state reset between specs; no interdependent test order; readable selectors (and a note on where the app forced them into brittle selectors — a real signal we want).
+6. Requirements: no fixed sleeps as a sync mechanism (`cy.wait(<ms>)` / `page.waitForTimeout(<ms>)`); retries left at 0; no interdependent test order; readable selectors (and a note on where the app forced them into brittle selectors — a real signal we want).
 7. `TEST_PLAN.md` (1 page): scope, what they automated vs left manual **and why**, how they made the suite deterministic, what they'd add with more time.
 
 **Explicit non-goals:** no fixing the app, no performance/load testing, no CI required (bonus only), no framework rewrite, no 100% coverage.
@@ -169,7 +177,7 @@ Grading intent: a strong candidate reports **A1 as Critical with the timezone/da
 
 Scoring: 0–4 bands per area (4 = senior signal, 3 = hire, 2 = shallow, 1 = poor, 0 = absent).
 
-**Objective checks we run:** suite executed **3 consecutive times** (flake detection), recall computed as `found / (5 Tier A + 3 seeded Tier B)`, and `grep` for `cy.wait(` with a numeric arg.
+**Objective checks we run:** suite executed **3 consecutive times** (flake detection), recall computed as `found / (5 Tier A + 3 seeded Tier B)`, and `grep` for hard sleeps and for failure-hiding constructs, per framework (see the equivalence table in `criteria.md` Area 7).
 
 **Bonus:** caught a defect we didn't inject · proposed `data-testid`/a11y fixes to make the app testable · CI workflow · a11y automation (axe) · boundary/negative cases beyond the brief · noticed the localStorage isolation trap and handled it explicitly.
 
@@ -182,7 +190,7 @@ Scoring: 0–4 bands per area (4 = senior signal, 3 = hire, 2 = shallow, 1 = poo
 1. ✅ `app/` — 5 pages, styling, fake API + seed/PRNG
 2. ✅ Tier A + Tier B injected behind opaque flags; seed→Tier B mapping computed and verified
 3. ✅ `homework-evaluation/bug-catalog.md` — exact repro, code pointers, distractor list
-4. ✅ `homework/starter/` Cypress scaffold + passing smoke spec (`cy.visitApp`, `retries: 0`)
+4. ✅ `homework/starter-cypress/` Cypress scaffold + passing smoke spec (`cy.visitApp`, `retries: 0`)
 5. ✅ `homework/assignment.md`, `criteria.md`, `scorecard.md`, internal `README.md`
 6. ✅ **Automated verification of the API layer** — `homework-evaluation/reference/logic-harness.mjs`
    (plain `node`, 24/24 checks on seeds 1000 + 1234): A1, A3, A5, B2, B5, B6, the failure
@@ -193,12 +201,57 @@ Scoring: 0–4 bands per area (4 = senior signal, 3 = hire, 2 = shallow, 1 = poo
 8. ✅ **Browser verification of the UI layer** — `reference/verify.internal.cy.js` run through
    Docker: **11/11 on seed 1000 and on seed 1234**, so all 5 Tier A + all 6 Tier B defects are
    confirmed end-to-end. Only the UX/a11y list still needs a human pass
-9. ⏳ Dogfood: a timed solo pass to confirm 1 day is realistic and every defect is discoverable
+9. ✅ **Dual runner** — `homework/starter-playwright/` scaffold, `docker/playwright.Dockerfile`,
+   `make test FRAMEWORK=…` dispatch, `reference/verify.internal.spec.js`, and a
+   framework-neutral rubric. Verified on seeds 1000 + 1234 through both runners. See §8
+10. ⏳ Dogfood: a timed solo pass to confirm 1 day is realistic and every defect is discoverable
    through the UI alone
 
 ---
 
-## 8. Open questions
+## 8. Dual runner: Cypress **or** Playwright (added 2026-09-07)
+
+Part 2 originally required Cypress. It now ships **two** working scaffolds —
+`homework/starter-cypress/` and `homework/starter-playwright/` — and the candidate extends
+exactly one. Full design, decisions and verification record:
+[`PLAN-dual-runner.md`](./PLAN-dual-runner.md).
+
+Why: the framework was never what we were measuring. Areas 1–4 of the rubric never mentioned
+one, and Areas 5–7 measure suite design, assertion quality and determinism, all of which
+express equally well in either tool. Forcing Cypress cost us signal from strong candidates who
+live in Playwright, and told us nothing extra about anyone. Letting them pick — and say why in
+`TEST_PLAN.md` — is itself a small signal.
+
+What did **not** change: `app/` (verified framework-agnostic — no driver references anywhere),
+the 8 planted defects, the seed→Tier B map, `logic-harness.mjs`, and every bar in the rubric.
+
+Three things that did:
+
+1. **`test.fail()` is a new red flag.** It is the Playwright construct that turns a
+   correctly-failing known-defect test into a *green* run without asserting anything wrong —
+   defeating Area 5's "asserted the correct behaviour" check by a route `.skip` never offered.
+   The brief forbids it; `criteria.md` greps for it.
+2. **Area 7's `localStorage` trap was already inert, and we only found out by adding the second
+   framework.** Cypress e2e `testIsolation` has defaulted to `true` since v12 and the scaffold
+   never overrode it, so `localStorage` was already cleared before each test; Playwright's
+   per-test context does the same. A two-test probe confirmed it in both. "Wrote a `beforeEach`
+   clear" was never the discriminator the rubric implied, so Area 7 is now re-based on whether
+   the candidate *understands and states* the isolation model and where it stops helping.
+3. **Chromium cannot reach a sibling container** across the compose bridge under Docker Desktop
+   (every request `ERR_CONNECTION_REFUSED`, while `curl` from the same container and WebKit in
+   the same image both work). The `playwright` service therefore uses
+   `network_mode: "service:app"` and talks to the same nginx over loopback. Cypress runs
+   Electron and is unaffected. This is documented in `reference/README.md` so nobody re-derives
+   it.
+
+Verification: `logic-harness.mjs` 24/24; both internal verifiers green on seeds 1000 and 1234;
+both scaffolds' smoke suites identical across three consecutive runs; and bundles built for
+`FRAMEWORK=both`, `cypress` and `playwright` unzip, leak nothing from
+`homework-evaluation/`, and run green from the unzipped directory.
+
+---
+
+## 9. Open questions
 
 - Do we hand this out as a **zip** or a private GitHub repo per candidate (repo makes seed assignment + PR-style submission easier)?
 - Should the a11y items be **hinted at** in the assignment ("include accessibility observations") or left unprompted (harder, better signal)? Current draft: prompted, since 1 day is tight.
