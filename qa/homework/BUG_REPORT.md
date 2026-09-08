@@ -11,4 +11,6 @@
 | BUG-008 | Book a session allows non‑emails in 'invite'                 | Low      | Medium                   | Chrome 152.0.7977.76, Windows, 1669x945, 7391 | User is booking a session with invite field        | 1. Book a session<br>2. Enter non‑email string in 'invite' field<br>3. Confirm booking                                             | System should validate input and reject non‑emails                        | Non‑emails accepted, booking proceeds                                                         |                                                                                                                                           | Input validation for invite field                    |
 | BUG-009 | Different date formats on booking vs sessions pages          | High     | High                     | Chrome 152.0.7977.76, Windows, 1669x945, 7391 | User has a session booked with differing day/month | 1. Book a session on a date where day and month differ<br>2. Observe dd/mm/yyyy format when booking                                | Date should be displayed in dd/mm/yyyy format on sessions page            | Dates displayed in mm/dd/yyyy format on sessions page                                         |                                                                                                                                           | Date format in storage or sessions page logic        |
 
-Tips
+
+
+
