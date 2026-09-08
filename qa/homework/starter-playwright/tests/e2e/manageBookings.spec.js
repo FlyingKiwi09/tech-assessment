@@ -12,7 +12,6 @@ test.describe("e2e: manage bookings", () => {
     const appointmentId = `appointment-${Date.now()}`;
     const coachesPage = new CoachesPage(page, app);
     const bookingForm = new BookingFormPage(page);
-    const sessionsPage = new SessionsPage(page, app);
     const coachName = "Yuki Tanaka";
     const duration = 60;
 
@@ -70,6 +69,37 @@ test.describe("e2e: manage bookings", () => {
     //assert that the booking does not exist in My Sessions
     await sessionsPage.goto();
     await expect(sessionsPage.bookingRow(booking.notes)).toHaveCount(0);
+  });
+
+  test("e2e: booking flow updates available slots", async ({ app, page }) => {
+    //arrange
+    const appointmentId = `appointment-${Date.now()}`;
+    const coachesPage = new CoachesPage(page, app);
+    const bookingForm = new BookingFormPage(page);
+    const sessionsPage = new SessionsPage(page, app);
+    const coachName = "Yuki Tanaka";
+    const duration = 60;
+
+    //act
+    await coachesPage.goto();
+    await coachesPage.openBookingForCoach(coachName);
+
+    const booking = await bookingForm.bookSession({
+      coachName: coachName,
+      duration: duration,
+      date: "next available",
+      time: "next available",
+      notes: appointmentId,
+    });
+
+    //assert
+    // attempt to book the same slot again and assert that it is no longer available
+    await coachesPage.goto();
+    await coachesPage.openBookingForCoach(coachName);
+    await bookingForm.selectDate(booking.date);
+    await expect(bookingForm.selectTime(booking.time)).rejects.toThrow(
+      `time is not available on the selected date: ${booking.time}`,
+    );
   });
 
   test("e2e: cancel booking status updates to cancelled", async ({

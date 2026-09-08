@@ -77,6 +77,7 @@ class BookingFormPage {
   }
 
   async selectDate(date) {
+    await expect(this.days).not.toHaveCount(0);
     const availableDates = await this.days.evaluateAll((buttons) =>
       buttons.map((button) => button.getAttribute("data-day")),
     );
