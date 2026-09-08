@@ -1,16 +1,17 @@
 # Usability & Accessibility Findings
 
-| Observation | User Impact | Suggested Fix |
-|-------------|-------------|----------------|
-| Can't tab to time slots on book session page | Keyboard users can't book sessions | Make time slots focusable with `tabindex=0` and ensure visible focus styles |
-| One click cancel for bookings on 'My Sessions' page | User can easily cancel booking by accident | Add a 'confirm cancellation' popup |
-| Low contrast between blue 'book' and black outline when focused | Visually impaired users may struggle to distinguish focused buttons | Update focused style for blue buttons with higher contrast |
-| Nav bar doesn't fit on narrow device <360px | Can't navigate / need to scroll | Use a reactive dropdown menu for smaller displays |
-| My Sessions page — some times overflow to second line on narrow devices <360px | Looks untidy | Reactive display should allow longer date/times; adjust element size |
-| Coaches page — results in two columns, right side cut off on narrow devices <360px | Can't read some coach details | Display coaches as one scrollable list without pagination on smaller devices |
-| Nav bar narration — 'My Sessions' and 'AI coach' read each word separately | Confusing for blind/low‑vision users relying on screen readers | Use semantic HTML with a single accessible label, e.g. `aria-label="My Sessions"` |
-| Cancelled sessions remain on 'My Sessions' list | Difficult to see upcoming sessions | Add filtering for past, cancelled, and upcoming sessions; default to upcoming |
-| Confirm modal visible in DOM before visible on page | Assistive tech can “see” multiple dialogs at once | Remove hidden modals from DOM until needed, or mark with `aria-hidden="true"` |
-| Notes text (`<p class=hint>`) on sessions page has low contrast | Difficult to read | Increase contrast between background and text |
-| Inconsistency between '60 minutes' on booking form and '60 min' on session page | Untidy / informal | Use consistent wording for duration across pages |
-| Reschedule doesn't allow change between 60 and 30 mins | User must cancel and rebook for different duration | Update reschedule to allow duration changes |
+| Observation                                                                              | User Impact                                                         | Suggested Fix                                                                     |
+| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Can't tab to time slots on book session page                                             | Keyboard users can't book sessions                                  | Make time slots focusable with `tabindex=0` and ensure visible focus styles       |
+| One click cancel for bookings on 'My Sessions' page                                      | User can easily cancel booking by accident                          | Add a 'confirm cancellation' popup                                                |
+| Low contrast between blue 'book' and black outline when focused                          | Visually impaired users may struggle to distinguish focused buttons | Update focused style for blue buttons with higher contrast                        |
+| Nav bar doesn't fit on narrow device <360px                                              | Can't navigate / need to scroll                                     | Use a reactive dropdown menu for smaller displays                                 |
+| My Sessions page — some times overflow to second line on narrow devices <360px           | Looks untidy                                                        | Reactive display should allow longer date/times; adjust element size              |
+| Coaches page — results in two columns, right side cut off on narrow devices <360px       | Can't read some coach details                                       | Display coaches as one scrollable list without pagination on smaller devices      |
+| Nav bar narration — 'My Sessions' and 'AI coach' read each word separately               | Confusing for blind/low‑vision users relying on screen readers      | Use semantic HTML with a single accessible label, e.g. `aria-label="My Sessions"` |
+| Cancelled sessions remain on 'My Sessions' list                                          | Difficult to see upcoming sessions                                  | Add filtering for past, cancelled, and upcoming sessions; default to upcoming     |
+| Confirm modal visible in DOM before visible on page                                      | Assistive tech can “see” multiple dialogs at once                   | Remove hidden modals from DOM until needed, or mark with `aria-hidden="true"`     |
+| Notes text (`<p class=hint>`) on sessions page has low contrast                          | Difficult to read                                                   | Increase contrast between background and text                                     |
+| Inconsistency between '60 minutes' on booking form and '60 min' on session page          | Untidy / informal                                                   | Use consistent wording for duration across pages                                  |
+| Reschedule doesn't allow change between 60 and 30 mins                                   | User must cancel and rebook for different duration                  | Update reschedule to allow duration changes                                       |
+| popups to confirm bookings, cancelations and errors are small and disapear from the page | user could easily miss these                                        | messages should remain on the page until user acknowledges them                   |
