@@ -3,34 +3,47 @@ const { CoachesPage } = require("../pages/coaches.page");
 const { BookingFormPage } = require("../pages/booking-form.page");
 const { SessionsPage } = require("../pages/sessions.page");
 
+const coachName = "Yuki Tanaka";
+const duration = 60;
+
+function createBookingContext({ app, page }) {
+  const appointmentId = `appointment-${Date.now()}`;
+
+  return {
+    appointmentId,
+    bookingDetails: {
+      coachName,
+      duration,
+      date: "next available",
+      time: "next available",
+      notes: appointmentId,
+    },
+    coachesPage: new CoachesPage(page, app),
+    bookingForm: new BookingFormPage(page),
+    sessionsPage: new SessionsPage(page, app),
+  };
+}
+
 test.describe("e2e: create bookings", () => {
   test("e2e: booking flow persists correct details in My Sessions", async ({
     app,
     page,
   }) => {
     //arrange
-    const appointmentId = `appointment-${Date.now()}`;
-    const coachesPage = new CoachesPage(page, app);
-    const bookingForm = new BookingFormPage(page);
-    const coachName = "Yuki Tanaka";
-    const duration = 60;
+    const context = createBookingContext({ app, page });
 
     //act
-    await coachesPage.goto();
-    await coachesPage.openBookingForCoach(coachName);
+    await context.coachesPage.goto();
+    await context.coachesPage.openBookingForCoach(coachName);
 
-    const booking = await bookingForm.bookSession({
-      coachName: coachName,
-      duration: duration,
-      date: "next available",
-      time: "next available",
-      notes: appointmentId,
-    });
+    const booking = await context.bookingForm.bookSession(
+      context.bookingDetails,
+    );
 
     //assert
-    await sessionsPage.goto();
-    await sessionsPage.expectBooking({
-      notes: appointmentId,
+    await context.sessionsPage.goto();
+    await context.sessionsPage.expectBooking({
+      notes: context.appointmentId,
       coachName,
       duration: `${duration} min`,
       date: booking.expectedDate,
@@ -44,57 +57,40 @@ test.describe("e2e: create bookings", () => {
     page,
   }) => {
     //arrange
-    const appointmentId = `appointment-${Date.now()}`;
-    const coachesPage = new CoachesPage(page, app);
-    const bookingForm = new BookingFormPage(page);
-    const sessionsPage = new SessionsPage(page, app);
-    const coachName = "Yuki Tanaka";
-    const duration = 60;
+    const context = createBookingContext({ app, page });
 
     //act
-    await coachesPage.goto();
-    await coachesPage.openBookingForCoach(coachName);
+    await context.coachesPage.goto();
+    await context.coachesPage.openBookingForCoach(coachName);
 
-    const booking = await bookingForm.bookSession({
-      coachName: coachName,
-      duration: duration,
-      date: "next available",
-      time: "next available",
-      notes: appointmentId,
+    const booking = await context.bookingForm.bookSession({
+      ...context.bookingDetails,
       abort: true,
     });
 
     //assert
-    await sessionsPage.goto();
-    await expect(sessionsPage.bookingRow(booking.notes)).toHaveCount(0);
+    await context.sessionsPage.goto();
+    await expect(context.sessionsPage.bookingRow(booking.notes)).toHaveCount(0);
   });
 
   test("e2e: booking flow updates available slots", async ({ app, page }) => {
     //arrange
-    const appointmentId = `appointment-${Date.now()}`;
-    const coachesPage = new CoachesPage(page, app);
-    const bookingForm = new BookingFormPage(page);
-    const coachName = "Yuki Tanaka";
-    const duration = 60;
+    const context = createBookingContext({ app, page });
 
     //act
-    await coachesPage.goto();
-    await coachesPage.openBookingForCoach(coachName);
+    await context.coachesPage.goto();
+    await context.coachesPage.openBookingForCoach(coachName);
 
-    const booking = await bookingForm.bookSession({
-      coachName: coachName,
-      duration: duration,
-      date: "next available",
-      time: "next available",
-      notes: appointmentId,
-    });
+    const booking = await context.bookingForm.bookSession(
+      context.bookingDetails,
+    );
 
     //assert
-    await coachesPage.goto();
-    await coachesPage.openBookingForCoach(coachName);
-    await bookingForm.selectDate(booking.date);
+    await context.coachesPage.goto();
+    await context.coachesPage.openBookingForCoach(coachName);
+    await context.bookingForm.selectDate(booking.date);
 
-    await expect(bookingForm.selectTime(booking.time)).rejects.toThrow(
+    await expect(context.bookingForm.selectTime(booking.time)).rejects.toThrow(
       `time is not available on the selected date: ${booking.time}`,
     );
   });
