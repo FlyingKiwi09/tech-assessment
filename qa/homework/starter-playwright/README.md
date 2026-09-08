@@ -3,6 +3,12 @@
 Minimal, working Playwright setup for the assignment. Extend it; you may restructure it
 if you explain why in your `TEST_PLAN.md`.
 
+The suite uses a small Page Object Model under `tests/pages/`. The page objects keep
+selectors and booking mechanics out of test cases, while `BookingFormPage.bookSession`
+accepts the coach, duration, date, and time as reusable inputs. Date and time default to
+the next available option, and the helper validates the supported duration enum and the
+seven-day date window.
+
 There is a Cypress scaffold next door in `../starter-cypress/`. **Pick one** — do not
 submit both.
 
