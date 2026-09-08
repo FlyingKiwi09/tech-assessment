@@ -23,9 +23,23 @@ class SessionsPage {
     await expect.soft(row).toContainText(duration);
     await expect.soft(row).toContainText(date);
     await expect.soft(row).toContainText(time);
-    await expect
-      .soft(row.getByTestId("session-status"))
-      .toHaveText(status);
+    await expect.soft(row.getByTestId("session-status")).toHaveText(status);
+  }
+
+  async cancelBooking(notes) {
+    const row = this.sessionRows.filter({
+      has: this.sessionHint.filter({ hasText: notes }),
+    });
+
+    await row.getByRole("button", { name: "Cancel" }).click();
+  }
+
+  async expectBookingStatus(notes, expectedStatus) {
+    const row = this.sessionRows.filter({
+      has: this.sessionHint.filter({ hasText: notes }),
+    });
+
+    await expect(row.getByTestId("session-status")).toHaveText(expectedStatus);
   }
 }
 
