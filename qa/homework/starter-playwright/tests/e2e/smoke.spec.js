@@ -78,4 +78,42 @@ test.describe("e2e: manage bookings", () => {
     await sessionsPage.expectBookingStatus(appointmentId, "cancelled");
   });
 
+  test("e2e: reschedule booking persists correct details in My Sessions", async ({
+    app,
+    page,
+  }) => {
+    const appointmentId = `appointment-${Date.now()}`;
+    const coachesPage = new CoachesPage(page, app);
+    const bookingForm = new BookingFormPage(page);
+    const sessionsPage = new SessionsPage(page, app);
+    const coachName = "Yuki Tanaka";
+    const duration = 60;
+
+    await coachesPage.goto();
+    await coachesPage.openBookingForCoach(coachName);
+
+    const booking = await bookingForm.bookSession({
+      coachName: coachName,
+      duration: duration,
+      date: "next available",
+      time: "next available",
+      notes: appointmentId,
+    });
+
+    await sessionsPage.goto();
+
+    const rescheduledBooking = await sessionsPage.rescheduleBooking(
+      appointmentId,
+      { excludeDate: booking.date },
+    );
+
+    await sessionsPage.expectBooking({
+      notes: appointmentId,
+      coachName,
+      duration: `${duration} min`,
+      date: rescheduledBooking.date,
+      time: rescheduledBooking.time,
+      status: "confirmed",
+    });
+  });
 });
