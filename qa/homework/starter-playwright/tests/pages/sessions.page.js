@@ -10,6 +10,7 @@ class SessionsPage {
     this.rescheduleModal = page.locator("#reschedule-modal.open");
     this.rescheduleDay = page.getByTestId("resched-day");
     this.rescheduleTime = page.getByTestId("resched-hour");
+    this.cancelRescheduleButton = page.getByRole("button", { name: "Back" });
     this.saveRescheduleButton = page.getByTestId("resched-save");
   }
 
@@ -42,14 +43,14 @@ class SessionsPage {
     await expect(row.getByTestId("session-status")).toHaveText(expectedStatus);
   }
 
-  async rescheduleBooking(notes, { excludeDate } = {}) {
+  async rescheduleBooking(notes, { excludeDate, abort = false } = {}) {
     const row = this.bookingRow(notes);
     await row.getByRole("button", { name: "Reschedule" }).click();
     await expect(this.rescheduleModal).toBeVisible();
 
-    const dateOptions = await this.rescheduleDay.locator("option").evaluateAll(
-      (options) => options.map((option) => option.value),
-    );
+    const dateOptions = await this.rescheduleDay
+      .locator("option")
+      .evaluateAll((options) => options.map((option) => option.value));
     const newDate = dateOptions.find((date) => date !== excludeDate);
 
     if (!newDate) {
@@ -59,11 +60,21 @@ class SessionsPage {
     await this.rescheduleDay.selectOption(newDate);
     await expect(this.rescheduleTime.locator("option")).not.toHaveCount(0);
 
-    const newTime = await this.rescheduleTime.locator("option").first().getAttribute("value");
-    const expectedTime = await this.rescheduleTime.locator("option").first().innerText();
+    const newTime = await this.rescheduleTime
+      .locator("option")
+      .first()
+      .getAttribute("value");
+    const expectedTime = await this.rescheduleTime
+      .locator("option")
+      .first()
+      .innerText();
 
     await this.rescheduleTime.selectOption(newTime);
-    await this.saveRescheduleButton.click();
+    if (abort) {
+      await this.cancelRescheduleButton.click();
+    } else {
+      await this.saveRescheduleButton.click();
+    }
     await expect(this.rescheduleModal).toBeHidden();
 
     return {
