@@ -24,19 +24,28 @@ test.describe("smoke", () => {
     const coachesPage = new CoachesPage(page, app);
     const bookingForm = new BookingFormPage(page);
     const sessionsPage = new SessionsPage(page, app);
+    const coachName = "Yuki Tanaka";
+    const duration = 60;
 
     await coachesPage.goto();
-    await coachesPage.openBookingForCoach("Yuki Tanaka");
+    await coachesPage.openBookingForCoach(coachName);
 
     const booking = await bookingForm.bookSession({
-      coachName: "Yuki Tanaka",
-      duration: 60,
+      coachName: coachName,
+      duration: duration,
       date: "next available",
       time: "next available",
       notes: appointmentId,
     });
 
     await sessionsPage.goto();
-    await sessionsPage.expectBooking(booking);
+    await sessionsPage.expectBooking({
+      notes: appointmentId,
+      coachName,
+      duration: `${duration} min`,
+      date: booking.expectedDate,
+      time: booking.expectedTime,
+      status: "confirmed",
+    });
   });
 });

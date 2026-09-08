@@ -30,6 +30,7 @@ class BookingFormPage {
     guestEmail,
   }) {
     this.validateDuration(duration);
+    // Use a unique notes value to identify the booking in the sessions list
     const bookingNotes = notes || `booking-${Date.now()}`;
 
     await expect(this.bookingCoach).toHaveText(coachName);

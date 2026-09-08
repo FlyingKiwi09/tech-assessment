@@ -13,19 +13,19 @@ class SessionsPage {
     await this.app.goto("/sessions.html");
   }
 
-  async expectBooking(booking) {
+  async expectBooking({ notes, coachName, duration, date, time, status }) {
     const row = this.sessionRows.filter({
-      has: this.sessionHint.filter({ hasText: booking.notes }),
+      has: this.sessionHint.filter({ hasText: notes }),
     });
 
     await expect(row).toBeVisible();
-    await expect.soft(row).toContainText(booking.coachName);
-    await expect.soft(row).toContainText(booking.expectedDuration);
-    await expect.soft(row).toContainText(booking.expectedDate);
-    await expect.soft(row).toContainText(booking.expectedTime);
+    await expect.soft(row).toContainText(coachName);
+    await expect.soft(row).toContainText(duration);
+    await expect.soft(row).toContainText(date);
+    await expect.soft(row).toContainText(time);
     await expect
       .soft(row.getByTestId("session-status"))
-      .toHaveText("confirmed");
+      .toHaveText(status);
   }
 }
 
