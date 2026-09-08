@@ -18,6 +18,7 @@ class BookingFormPage {
     this.notesInput = page.getByTestId("notes");
     this.guestEmailInput = page.getByTestId("guest-email");
     this.durationSelect = page.getByTestId("duration");
+    this.cancelButton = page.getByRole("button", { name: "Back" });
     this.confirmButton = page.getByTestId("confirm-booking");
   }
 
@@ -28,6 +29,7 @@ class BookingFormPage {
     time = NEXT_AVAILABLE,
     notes,
     guestEmail,
+    abort = false,
   }) {
     this.validateDuration(duration);
     // Use a unique notes value to identify the booking in the sessions list
@@ -50,7 +52,11 @@ class BookingFormPage {
     }
 
     await this.durationSelect.selectOption(String(duration));
-    await this.confirmButton.click();
+    if (abort) {
+      await this.cancelButton.click();
+    } else {
+      await this.confirmButton.click();
+    }
     await expect(this.confirmModal).toBeHidden();
 
     return {

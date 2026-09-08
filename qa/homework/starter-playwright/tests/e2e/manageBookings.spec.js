@@ -8,7 +8,6 @@ test.describe("e2e: manage bookings", () => {
     app,
     page,
   }) => {
-    clear;
     //arrange
     const appointmentId = `appointment-${Date.now()}`;
     const coachesPage = new CoachesPage(page, app);
@@ -39,6 +38,38 @@ test.describe("e2e: manage bookings", () => {
       time: booking.expectedTime,
       status: "confirmed",
     });
+  });
+
+  test("e2e: aborted booking flow does not create a booking in My Sessions", async ({
+    app,
+    page,
+  }) => {
+    //arrange
+    const appointmentId = `appointment-${Date.now()}`;
+    const coachesPage = new CoachesPage(page, app);
+    const bookingForm = new BookingFormPage(page);
+    const sessionsPage = new SessionsPage(page, app);
+    const coachName = "Yuki Tanaka";
+    const duration = 60;
+
+    //act
+    await coachesPage.goto();
+    await coachesPage.openBookingForCoach(coachName);
+
+    // update to enter details here but click 'back' instead of 'book session'
+    const booking = await bookingForm.bookSession({
+      coachName: coachName,
+      duration: duration,
+      date: "next available",
+      time: "next available",
+      notes: appointmentId,
+      abort: true,
+    });
+
+    //assert
+    //assert that the booking does not exist in My Sessions
+    await sessionsPage.goto();
+    await expect(sessionsPage.bookingRow(booking.notes)).toHaveCount(0);
   });
 
   test("e2e: cancel booking status updates to cancelled", async ({
@@ -72,7 +103,7 @@ test.describe("e2e: manage bookings", () => {
     await sessionsPage.expectBookingStatus(appointmentId, "cancelled");
   });
 
-  test("e2e: reschedule booking persists correct details in My Sessions", async ({
+  test("e2e: reschedule booking updates correct details in My Sessions", async ({
     app,
     page,
   }) => {
