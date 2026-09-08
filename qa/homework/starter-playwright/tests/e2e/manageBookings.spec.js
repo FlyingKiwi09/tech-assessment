@@ -53,6 +53,24 @@ test.describe("e2e: manage bookings", () => {
     );
   });
 
+  test("e2e: cancel booking time slot is released", async ({ app, page }) => {
+    //arrange
+    const context = createBookingContext({ app, page });
+    await arrangeBooking(context);
+
+    //act
+    await context.sessionsPage.goto();
+    await context.sessionsPage.cancelBooking(context.appointmentId);
+
+    await context.coachesPage.goto();
+    await context.coachesPage.openBookingForCoach(coachName);
+    await context.bookingForm.selectDate(context.booking.date);
+
+    await expect(
+      context.bookingForm.selectTime(context.booking.time),
+    ).resolves.toBe(context.booking.time);
+  });
+
   test("e2e: reschedule booking updates correct details in My Sessions", async ({
     app,
     page,
